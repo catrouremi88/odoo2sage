@@ -167,11 +167,14 @@ def convert(odoo_file):
             cg, ct, lib, deb, cre, dech
         ]
 
-        # Ligne sans analytique (toujours présente)
-        lines.append(';'.join(base) + ';0;')
-
-        # Ligne avec analytique pour toutes les lignes produit (706xxx)
-        if cg.startswith('706') or (not cg.startswith('411') and not cg.startswith('445') and not cg.startswith('41100000')):
-            lines.append(';'.join(base) + f';1;{code}')
+        # Ligne 411/445 : toujours sans analytique
+        if cg.startswith('411') or cg.startswith('445'):
+            lines.append(';'.join(base) + ';0;')
+        else:
+            # Ligne produit (706xxx) : une seule ligne avec code si disponible, sinon 0
+            if code:
+                lines.append(';'.join(base) + f';1;{code}')
+            else:
+                lines.append(';'.join(base) + ';0;')
 
     return '\n'.join(lines)
