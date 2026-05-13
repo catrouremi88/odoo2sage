@@ -156,7 +156,7 @@ def convert(odoo_file):
         deb  = fmt_decimal(r['Débit']  if pd.notna(r['Débit'])  else '')
         cre  = fmt_decimal(r['Crédit'] if pd.notna(r['Crédit']) else '')
         date = fmt_date(r['Date'])
-        dech = fmt_date(r["Date d'échéance"]) if pd.notna(r["Date d'échéance"]) else ''
+        dech = fmt_date(r["Date d'échéance"]) if pd.notna(r["Date d'échéance"]) else date
 
         parts = ['VT', date, str(r['Numéro']), cg, ct, lib, deb, cre, dech, code]
         lines.append(';'.join(parts))
