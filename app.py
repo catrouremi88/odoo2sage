@@ -172,7 +172,7 @@ HTML = """<!DOCTYPE html>
 <div class="card">
   <div class="header">
     <div class="logo-box">⟶</div>
-    <div class="brand"><strong>MAJORE</strong>Odoo → Sage 100</div>
+    <div class="brand"><strong>Built by Rémi Catrou</strong>Odoo → Sage 100</div>
   </div>
 
   <h1>Export Sage 100</h1>
