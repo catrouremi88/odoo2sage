@@ -151,7 +151,7 @@ def convert(odoo_file):
             code = ref if ref in code_client else ''
 
         cg   = compte_general(r['Compte'], code, r['Taxes'], altios, code_to_comptes, code_client)
-        ct   = compte_tiers(partner)
+        ct   = compte_tiers(partner) if cg == '41100000' else ''
         product_label = r['Libellé']  if pd.notna(r['Libellé'])   else None
         partner_name  = r['Partenaire'] if pd.notna(r['Partenaire']) else ''
         raw_lib = str(product_label if product_label else partner_name)
