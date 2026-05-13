@@ -141,8 +141,8 @@ def convert(odoo_file):
 
     lines = []
     for _, r in df.iterrows():
-        partner = r['Partenaire']
-        altios  = is_altios(partner)
+        partner   = r['Partenaire']
+        altios    = is_altios(partner)
 
         if altios:
             code = get_code_altios(partner)
@@ -155,13 +155,23 @@ def convert(odoo_file):
         product_label = r['Libellé']  if pd.notna(r['Libellé'])   else None
         partner_name  = r['Partenaire'] if pd.notna(r['Partenaire']) else ''
         raw_lib = str(product_label if product_label else partner_name)
-        lib = raw_lib.replace('\n', ' ').replace(';', ' ').replace('  ', ' ').strip()[:69]
+        lib  = raw_lib.replace('\n', ' ').replace(';', ' ').replace('  ', ' ').strip()[:69]
         deb  = fmt_decimal(r['Débit']  if pd.notna(r['Débit'])  else '')
         cre  = fmt_decimal(r['Crédit'] if pd.notna(r['Crédit']) else '')
         date = fmt_date(r['Date'])
         dech = fmt_date(r["Date d'échéance"]) if pd.notna(r["Date d'échéance"]) else date
 
-        parts = ['VT', date, str(r['Numéro']), cg, ct, lib, deb, cre, dech, code]
-        lines.append(';'.join(parts))
+        base = [
+            'VT', date,
+            str(r['Numéro']) if pd.notna(r['Numéro']) else '',
+            cg, ct, lib, deb, cre, dech
+        ]
+
+        # Ligne sans analytique (toujours présente)
+        lines.append(';'.join(base) + ';0;')
+
+        # Ligne avec analytique pour toutes les lignes produit (706xxx)
+        if cg.startswith('706') or (not cg.startswith('411') and not cg.startswith('445') and not cg.startswith('41100000')):
+            lines.append(';'.join(base) + f';1;{code}')
 
     return '\n'.join(lines)
