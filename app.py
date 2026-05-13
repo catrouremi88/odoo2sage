@@ -1,5 +1,6 @@
 from flask import Flask, request, send_file, render_template_string
 import os, tempfile, io
+from datetime import datetime
 from converter import convert
 
 app = Flask(__name__)
@@ -230,9 +231,54 @@ HTML = """<!DOCTYPE html>
   dz.addEventListener('dragleave', () => dz.classList.remove('over'));
   dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); });
 
-  document.getElementById('frm').addEventListener('submit', () => {
+  function resetBtn() {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+
+  document.getElementById('frm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!fi.files.length) return;
+
     btn.classList.add('loading');
     btn.disabled = true;
+
+    const formData = new FormData(document.getElementById('frm'));
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2,'0');
+    const mm = String(today.getMonth()+1).padStart(2,'0');
+    const yyyy = today.getFullYear();
+    const filename = `IMPORTSAGE_${dd}${mm}${yyyy}.txt`;
+
+    fetch('/', { method: 'POST', body: formData })
+      .then(res => {
+        if (!res.ok) return res.text().then(t => { throw new Error(t); });
+        return res.blob();
+      })
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        resetBtn();
+
+        // Message succès
+        let banner = document.getElementById('success-banner');
+        if (!banner) {
+          banner = document.createElement('div');
+          banner.id = 'success-banner';
+          banner.style.cssText = 'margin-top:1rem;padding:0.75rem 1rem;border-radius:9px;font-size:0.84rem;line-height:1.45;background:rgba(0,229,160,0.08);border:1px solid rgba(0,229,160,0.22);color:#00e5a0;';
+          document.getElementById('frm').after(banner);
+        }
+        banner.innerHTML = `✓ Fichier <strong>${filename}</strong> généré — disponible dans vos téléchargements.`;
+      })
+      .catch(err => {
+        resetBtn();
+        alert('Erreur lors de la conversion. Vérifiez votre fichier.');
+      });
   });
 </script>
 </body>
@@ -254,13 +300,14 @@ def upload():
             result = convert(tmp.name)
         os.unlink(tmp.name)
 
+        filename = f"IMPORTSAGE_{datetime.today().strftime('%d%m%Y')}.txt"
         output = io.BytesIO(result.encode('utf-8'))
         output.seek(0)
         return send_file(
             output,
             mimetype='text/plain',
             as_attachment=True,
-            download_name='sage_export.txt'
+            download_name=filename
         )
     except Exception as e:
         return render_template_string(HTML, error=f"Erreur lors de la conversion : {str(e)}")
