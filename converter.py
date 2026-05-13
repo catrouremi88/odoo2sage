@@ -40,7 +40,38 @@ def load_client():
         }
     return result
 
-# ── Entités Altios ────────────────────────────────────────────────────────────
+# ── Codes clients Sage pour les filiales ─────────────────────────────────────
+FILIALE_SAGE_CODE = {
+    'ALTIOS FRANCE SAS':                                        '411ALTFR',
+    'ALTIOS SOUTH EAST ASIA PRIVATE LIMITED':                   '411ALTSI',
+    'ALTIOS CORPORATE SERVICES SAS':                            '411ACS',
+    'ALTIOS INTERNATIONAL SAS':                                 '411ALTINT',
+    'ALTIOS MALAYSIA SDN BHD':                                  '411ALTMAL',
+    'ALTIOS GERMANY GMBH':                                      '411ALTALL',
+    'ALTIOS POLSKA S.P.Z.O.O.':                                 '411LOGOS',
+    'ALTIOS INTERNATIONAL UK LIMITED':                          '411FRENGERBUS',
+    'FRENGER BUSINESS SERVICES LIMITED':                        '411FRENGERBUS',
+    'FRENGER CONSULTING SERVICES LIMITED':                      '411FRENGERBUS',
+    'ALTIOS SPAIN SOCIEDAD LIMITADA':                           '411ALTESP',
+    'LUSIALTIOS UNIPESSOAL LDA':                                '411ALTPOR',
+    'ALTIOS ITALIA SRL':                                        '411ALTIT',
+    'ALTIOS ASIA LIMITED':                                      '411ALTAS',
+    'ALTIOS HONG-KONG LIMITED':                                 '411ALTHK',
+    'ALTIOS AUSTRALIA PTY LIMITED':                             '411ALTAU',
+    'ALTIOS NEW ZEALAND LIMITED':                               '411ALTNZ',
+    'ALTIOS INTERNATIONAL INC':                                 '411ALTUS',
+    'ALTIOS CONSEILS INC':                                      '411ALTCAN',
+    'ALTIOS ADVISORY MEXICO S.A DE C.V':                        '411ALTME',
+    'ALTIOS LATAM SERVICES S.A DE C.V':                         '411ALTMELAT',
+    'ALTIOS DO BRASIL CONSULTORIA E REPRESENTACOES LTDA':       '411ALTBRE',
+    'ALTIOS INTERNATIONAL FZCO':                                '411STEERING',
+    'M AND V MARKETING AND SALES PRIVATE LIMITED':              '411MNS',
+    'M AND V MARKETING DEVELOPMENT SERVICES PRIVATE LIMITED':   '411MDS',
+    'M&V MARKET DEVELOPMENT SERVICE PVT. LTD':                  '411MNS',
+    'GRUPO LT COLOMBIA SAS':                                    '411ALTCOLHOLD',
+}
+
+
 PARTNER_TO_CODE_UPPER = {
     'ALTIOS FRANCE SAS':                                        None,
     'ALTIOS SOUTH EAST ASIA PRIVATE LIMITED':                   'FSI',
@@ -101,6 +132,11 @@ def fmt_decimal(val):
 
 def compte_tiers(partner):
     if pd.isna(partner) or not str(partner).strip(): return ''
+    upper = str(partner).strip().upper()
+    # Code Sage officiel si filiale connue
+    if upper in FILIALE_SAGE_CODE:
+        return FILIALE_SAGE_CODE[upper]
+    # Sinon génération automatique : 411 + alphanumérique tronqué à 14 chars
     p = re.sub(r'[^A-Za-z0-9]', '', partner.upper())[:14]
     return '411' + p
 
@@ -161,20 +197,24 @@ def convert(odoo_file):
         date = fmt_date(r['Date'])
         dech = fmt_date(r["Date d'échéance"]) if pd.notna(r["Date d'échéance"]) else date
 
+        # Date d'échéance : uniquement sur les lignes 411
+        if cg.startswith('411') or cg.startswith('445'):
+            base_dech = dech
+        else:
+            base_dech = ''
+
         base = [
             'VT', date,
-            str(r['Numéro']) if pd.notna(r['Numéro']) else '',
-            cg, ct, lib, deb, cre, dech
+            re.sub(r'[^A-Za-z0-9]', '', str(r['Numéro'])) if pd.notna(r['Numéro']) else '',
+            cg, ct, lib, deb, cre, base_dech
         ]
 
-        # Ligne 411/445 : toujours sans analytique
+        # Ligne 411/445 : une seule ligne G sans analytique
         if cg.startswith('411') or cg.startswith('445'):
-            lines.append(';'.join(base) + ';0;')
+            lines.append(';'.join(base) + ';G;0;')
         else:
-            # Ligne produit (706xxx) : une seule ligne avec code si disponible, sinon 0
-            if code:
-                lines.append(';'.join(base) + f';1;{code}')
-            else:
-                lines.append(';'.join(base) + ';0;')
+            # Ligne produit : ligne G puis ligne A avec code section
+            lines.append(';'.join(base) + ';G;0;')
+            lines.append(';'.join(base) + f';A;1;{code}')
 
     return '\n'.join(lines)
