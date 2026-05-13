@@ -152,7 +152,10 @@ def convert(odoo_file):
 
         cg   = compte_general(r['Compte'], code, r['Taxes'], altios, code_to_comptes, code_client)
         ct   = compte_tiers(partner)
-        lib  = str(r['Libellé']) if pd.notna(r['Libellé']) else ''
+        product_label = r['Libellé']  if pd.notna(r['Libellé'])   else None
+        partner_name  = r['Partenaire'] if pd.notna(r['Partenaire']) else ''
+        raw_lib = str(product_label if product_label else partner_name)
+        lib = raw_lib.replace('\n', ' ').replace(';', ' ').replace('  ', ' ').strip()[:69]
         deb  = fmt_decimal(r['Débit']  if pd.notna(r['Débit'])  else '')
         cre  = fmt_decimal(r['Crédit'] if pd.notna(r['Crédit']) else '')
         date = fmt_date(r['Date'])
