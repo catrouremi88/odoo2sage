@@ -175,6 +175,20 @@ def convert(odoo_file):
 
     df = pd.read_excel(odoo_file)
 
+    # Normaliser les noms de colonnes (FR et EN)
+    col_map = {
+        'Partner':       'Partenaire',
+        'Account':       'Compte',
+        'Debit':         'Débit',
+        'Credit':        'Crédit',
+        'Due Date':      "Date d'échéance",
+        'Label':         'Libellé',
+        'Reference':     'Référence',
+        'Number':        'Numéro',
+        'Journal Entry': 'Pièce comptable',
+    }
+    df = df.rename(columns=col_map)
+
     lines = []
     for _, r in df.iterrows():
         partner   = r['Partenaire']
@@ -205,7 +219,7 @@ def convert(odoo_file):
 
         base = [
             'VT', date,
-            re.sub(r'[^A-Za-z0-9]', '', str(r['Numéro'])) if pd.notna(r['Numéro']) else '',
+            re.sub(r'[^0-9]', '', str(r['Numéro'])) if pd.notna(r['Numéro']) else '',
             cg, ct, lib, deb, cre, base_dech
         ]
 
