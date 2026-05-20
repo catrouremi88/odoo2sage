@@ -301,7 +301,10 @@ def upload():
         os.unlink(tmp.name)
 
         filename = f"IMPORTSAGE_{datetime.today().strftime('%d%m%Y')}.txt"
-        output = io.BytesIO(result.encode('utf-8'))
+        result = result.replace('€', 'EUR')
+        encoded = result.encode('cp1252')
+        encoded = encoded.replace(b'\r\n', b'\n').replace(b'\n', b'\r\n')
+        output = io.BytesIO(encoded)
         output.seek(0)
         return send_file(
             output,
